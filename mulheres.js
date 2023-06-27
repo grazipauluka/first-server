@@ -3,6 +3,7 @@ const router = express.Router(); // configura a primeira parte da rota
 const conectaBancoDeDados = require('./bancoDeDados'); //conecta o arquivo ao banco de dados
 conectaBancoDeDados(); 
 const cors = require('cors')
+const pathToRegexp = require('path-to-regexp');
 
 const Mulher = require('./mulherModel')
 
