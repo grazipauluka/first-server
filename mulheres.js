@@ -1,92 +1,87 @@
+const express = require('express'); // inicia o express
+const router = express.Router(); // configura a primeira parte da rota
+const conectaBancoDeDados = require('./bancoDeDados'); //conecta o arquivo ao banco de dados
+conectaBancoDeDados(); 
+const cors = require('cors')
 
+const Mulher = require('./mulherModel')
 
-const express = require('express');
-const router = express.Router();
-
-const { v4: uuidv4 } = require('uuid');
-
-const app = express();
+const app = express(); // inicia o app
 app.use(express.json());
-const porta = 3333;
+app.use(cors())
+const porta = 3333; // cria a porta
 
-const mulheres = [
-	{id: "1",
-		nome: "Graziela Pauluka",
-		img: "https://lh3.googleusercontent.com/a/AAcHTteG0CcwwTQzZ8yYppY2_P3w4KY7PLFjdEtsSu-30zg=s576-c-no",
-		minibio: "Software developer"
-	},
-	{id: "2",
-		nome: "Ana Maria",
-		img: "https://lh3.googleusercontent.com/a/AAcHTteG0CcwwTQzZ8yYppY2_P3w4KY7PLFjdEtsSu-30zg=s576-c-no",
-		minibio: "Software developer"
-	},
-	{id: "3",
-		nome: "Luana",
-		img: "https://lh3.googleusercontent.com/a/AAcHTteG0CcwwTQzZ8yYppY2_P3w4KY7PLFjdEtsSu-30zg=s576-c-no",
-		minibio: "Software developer"
-	}
-]
+
 // GET
-function mostraMulheres(request, response) {
-	response.json(mulheres)
+async function mostraMulheres(request, response) {
+	try {
+		const mulheresVindasDoBD = await Mulher.find();
+
+		response.json(mulheresVindasDoBD)
+	} catch (error) {
+		console.log(error)
+	}
+	
+
 }
 
 // POST
-function criaMulher(request, response) {
-	const novaMulher =  {
-		id: uuidv4(),
-		name: request.body.name,
+async function criaMulher(request, response) {
+	const novaMulher =  new Mulher({
+		nome: request.body.nome,
 		img: request.body.img,
 		minibio: request.body.minibio
-	}
-	mulheres.push(novaMulher)
-	response.json(mulheres)
+	})
+try {
+	const MulherCriada = await novaMulher.save()
+	response.status(201).json(MulherCriada)
+} catch (error) {
+	console.log(error)
+}
+
 }
 
 // PATCH
-function corrigeMulher(request, response) {
-	function encontraMulher(mulher) {
-		if (mulher.id === request.params.id) {
-			return mulher;
+async function corrigeMulher(request, response) {
+	try {
+		const mulherEncontrada = await Mulher.findById(request.params.id)
+
+		if(request.body.nome) {
+			mulherEncontrada.nome = request.body.nome
 		}
+	
+		if(request.body.img) {
+			mulherEncontrada.img = request.body.img
+		}
+	
+		if(request.body.minibio) {
+			mulherEncontrada.minibio = request.body.minibio
+		}
+	const mulherAtualizada = await mulherEncontrada.save()
+	response.json(mulherAtualizada)
+	
+	} catch (error) {
+		console.log(error)
 	}
-	const mulherEncontrada = mulheres.find(encontraMulher);
-
-	if(request.body.nome) {
-		mulherEncontrada.nome = request.body.nome
-	}
-
-	if(request.body.img) {
-		mulherEncontrada.img = request.body.img
-	}
-
-	if(request.body.minibio) {
-		mulherEncontrada.minibio = request.body.minibio
-	}
-
-	response.json(mulheres)
 
 }
 
 // DELETE
 
-function deletaMulher(request,response) {
-	function todasMenosEla(mulher) {
-		if (mulher.id !== request.params.id){
-			return mulher
-		}
+async function deletaMulher(request,response) {
+	try {
+		await Mulher.findByIdAndDelete(request.params.id)
+		response.json({ messagem: "Mulher deletada com sucesso"})
+	} catch (error) {
+		console.log(error)
 	}
-	const mulheresQueFicam = mulheres.filter(todasMenosEla)
-	response.json(mulheresQueFicam)
 }
-
 function mostraPorta(){
-	console.log("servidor rodando na porta " + porta)
-}
+	console.log("servidor rodando na porta " + porta)}
 
 
 app.use(router.get('/mulheres', mostraMulheres));
 app.use(router.post('/mulheres', criaMulher));
 app.use(router.patch('/mulheres/:id', corrigeMulher));
 app.use(router.delete('/mulheres/:id', deletaMulher));
-app.listen(porta, mostraPorta)
+app.listen(porta, mostraPorta);
